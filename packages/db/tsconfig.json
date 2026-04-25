@@ -1,0 +1,9 @@
+{
+  "extends": "@klickkk/config/typescript",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src", "prisma"]
+}
