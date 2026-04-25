@@ -81,7 +81,7 @@ export function Sidebar({ tenantName }: { tenantName: string }) {
           </div>
           <div className="min-w-0">
             <div className="text-sidebar-foreground font-semibold text-sm truncate">{tenantName}</div>
-            <div className="text-sidebar-foreground/40 text-xs">HRMS</div>
+            <div className="text-sidebar-foreground/40 text-xs">Klickkk HR</div>
           </div>
         </div>
       </div>

@@ -2,34 +2,50 @@ import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/signup', '/api/auth', '/api/billing/webhook']
-
 export default auth(async (req: NextRequest & { auth: any }) => {
   const { pathname } = req.nextUrl
   const session = req.auth
 
-  // Always allow public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // ── Super admin section ──────────────────────────────────────────────────
+  if (pathname.startsWith('/superadmin')) {
+    // Login page: allow unauthenticated; redirect already-logged-in admins
+    if (pathname === '/superadmin') {
+      if (session?.user?.isSuperAdmin) {
+        return NextResponse.redirect(new URL('/superadmin/dashboard', req.url))
+      }
+      return NextResponse.next()
+    }
+    // All other /superadmin/* require a super admin session
+    if (!session?.user?.isSuperAdmin) {
+      return NextResponse.redirect(new URL('/superadmin', req.url))
+    }
     return NextResponse.next()
   }
 
-  // Unauthenticated → redirect to login
+  // ── Public tenant paths ───────────────────────────────────────────────────
+  if (
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/billing/webhook') ||
+    pathname === '/login' ||
+    pathname === '/signup'
+  ) {
+    return NextResponse.next()
+  }
+
+  // ── Require session for all other routes ──────────────────────────────────
   if (!session) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // Super admin routes
-  if (pathname.startsWith('/admin')) {
-    if (!session.user.isSuperAdmin) {
-      return NextResponse.redirect(new URL('/login', req.url))
-    }
-    return NextResponse.next()
+  // Super admin accidentally on tenant routes → back to their panel
+  if (session.user.isSuperAdmin) {
+    return NextResponse.redirect(new URL('/superadmin/dashboard', req.url))
   }
 
-  // Tenant must be set for all dashboard routes
-  if (!session.user.tenantId && !session.user.isSuperAdmin) {
+  // Tenant must exist for all dashboard routes
+  if (!session.user.tenantId) {
     return NextResponse.redirect(new URL('/onboarding', req.url))
   }
 

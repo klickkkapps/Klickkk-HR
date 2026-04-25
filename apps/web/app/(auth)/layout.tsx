@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="w-9 h-9 bg-blue-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">K</span>
             </div>
-            <span className="text-white text-2xl font-bold">Klickkk HRMS</span>
+            <span className="text-white text-2xl font-bold">Klickkk HR</span>
           </div>
           <p className="text-slate-400 text-sm">Modern HR Management for growing teams</p>
         </div>

@@ -74,7 +74,7 @@ export function BuyExtraSlotsButton({
         amount,
         currency: 'INR',
         order_id: orderId,
-        name: 'Klickkk HRMS',
+        name: 'Klickkk HR',
         description: `Prepaid Extra Employee Slots × ${slots}`,
         theme: { color: '#2563eb' },
         handler: async (response: {

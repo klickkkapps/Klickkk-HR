@@ -21,20 +21,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
-        tenantSlug: { label: 'Tenant', type: 'text' },
+        loginType: { label: 'Login Type', type: 'text' }, // 'tenant' | 'admin'
       },
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
 
         const { email, password } = parsed.data
-        const tenantSlug = credentials?.tenantSlug as string | undefined
+        const isAdminLogin = credentials?.loginType === 'admin'
 
         const user = await prisma.user.findFirst({
           where: {
             email,
-            isSuperAdmin: false,
-            ...(tenantSlug ? { tenant: { slug: tenantSlug } } : {}),
+            isSuperAdmin: isAdminLogin,
           },
           include: {
             tenant: true,
@@ -43,7 +42,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         })
 
         if (!user) return null
-        if (!user.passwordHash || !user.isActive) return null
+        if (!user.passwordHash) return null
+        if (!isAdminLogin && !user.isActive) return null
 
         const valid = await bcrypt.compare(password, user.passwordHash)
         if (!valid) return null

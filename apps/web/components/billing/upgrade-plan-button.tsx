@@ -52,7 +52,7 @@ export function UpgradePlanButton({ currentPlan }: { currentPlan: string }) {
       const rzp = new window.Razorpay({
         key: keyId,
         subscription_id: subscriptionId,
-        name: 'Klickkk HRMS',
+        name: 'Klickkk HR',
         description: 'Growth Plan — up to 75 active employees',
         theme: { color: '#2563eb' },
         handler: async (response: {

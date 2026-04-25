@@ -7,10 +7,10 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: {
-    default: 'Klickkk HRMS',
-    template: '%s | Klickkk HRMS',
+    default: 'Klickkk HR',
+    template: '%s | Klickkk HR',
   },
-  description: 'Modern HR Management System',
+  description: 'Modern HR Management for growing teams',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

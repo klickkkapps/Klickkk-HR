@@ -57,7 +57,7 @@ function LoginForm() {
   return (
     <div className="bg-white rounded-2xl shadow-2xl p-8">
       <h1 className="text-2xl font-bold text-slate-900 mb-1">Welcome back</h1>
-      <p className="text-slate-500 text-sm mb-6">Sign in to your HRMS account</p>
+      <p className="text-slate-500 text-sm mb-6">Sign in to your Klickkk HR account</p>
 
       {noAccount && (
         <div className="mb-4 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
