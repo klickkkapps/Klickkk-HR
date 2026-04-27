@@ -67,6 +67,48 @@ enum OnboardingStatus {
   COMPLETED
 }
 
+enum ExpenseStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum JobStatus {
+  OPEN
+  ON_HOLD
+  CLOSED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ReviewStatus {
+  DRAFT
+  SUBMITTED
+  ACKNOWLEDGED
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 // ─── Tenant (Company) ─────────────────────────────────────────────────────────
 
 model Tenant {
@@ -110,6 +152,9 @@ model Tenant {
   leaveTypes        LeaveType[]
   holidays          Holiday[]
   payrollRuns       PayrollRun[]
+  expenseCategories ExpenseCategory[]
+  jobPostings       JobPosting[]
+  courses           Course[]
 
   @@map("tenants")
 }
@@ -257,10 +302,11 @@ model Department {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent    Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
-  children  Department[] @relation("DepartmentHierarchy")
-  employees Employee[]
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DepartmentHierarchy")
+  employees   Employee[]
+  jobPostings JobPosting[]
 
   @@unique([tenantId, name])
   @@map("departments")
@@ -293,8 +339,9 @@ model Location {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employees Employee[]
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees   Employee[]
+  jobPostings JobPosting[]
 
   @@unique([tenantId, name])
   @@map("locations")
@@ -376,6 +423,12 @@ model Employee {
   reviewedLeaves        LeaveRequest[]     @relation("LeaveReviewer")
   attendanceRecords     AttendanceRecord[]
   payrollEntries        PayrollEntry[]
+  expenseClaims         ExpenseClaim[]
+  reviewedExpenses      ExpenseClaim[]     @relation("ExpenseReviewer")
+  goals                 Goal[]
+  performanceReviews    PerformanceReview[] @relation("ReviewSubject")
+  conductedReviews      PerformanceReview[] @relation("ReviewConducted")
+  courseEnrollments     CourseEnrollment[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, employeeCode])
@@ -683,4 +736,164 @@ model Announcement {
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("announcements")
+}
+
+// ─── Expenses ─────────────────────────────────────────────────────────────────
+
+model ExpenseCategory {
+  id          String        @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  createdAt   DateTime      @default(now())
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  claims      ExpenseClaim[]
+
+  @@unique([tenantId, name])
+  @@map("expense_categories")
+}
+
+model ExpenseClaim {
+  id          String        @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  categoryId  String
+  amount      Int           // in paise
+  date        DateTime      @db.Date
+  description String
+  receiptUrl  String?
+  status      ExpenseStatus @default(DRAFT)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  reviewNote  String?
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  employee    Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
+  reviewer    Employee?       @relation("ExpenseReviewer", fields: [reviewedBy], references: [id])
+
+  @@map("expense_claims")
+}
+
+// ─── Recruitment ──────────────────────────────────────────────────────────────
+
+model JobPosting {
+  id             String         @id @default(cuid())
+  tenantId       String
+  title          String
+  departmentId   String?
+  locationId     String?
+  employmentType EmploymentType @default(FULL_TIME)
+  description    String?        @db.Text
+  requirements   String?        @db.Text
+  openings       Int            @default(1)
+  status         JobStatus      @default(OPEN)
+  closingDate    DateTime?      @db.Date
+  createdBy      String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  location     Location?    @relation(fields: [locationId], references: [id])
+  applications JobApplication[]
+
+  @@map("job_postings")
+}
+
+model JobApplication {
+  id            String            @id @default(cuid())
+  tenantId      String
+  jobPostingId  String
+  candidateName String
+  email         String
+  phone         String?
+  resumeUrl     String?
+  coverLetter   String?           @db.Text
+  status        ApplicationStatus @default(APPLIED)
+  notes         String?           @db.Text
+  appliedAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  jobPosting    JobPosting        @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+
+  @@map("job_applications")
+}
+
+// ─── Performance ──────────────────────────────────────────────────────────────
+
+model Goal {
+  id          String     @id @default(cuid())
+  tenantId    String
+  employeeId  String
+  title       String
+  description String?
+  dueDate     DateTime?  @db.Date
+  progress    Int        @default(0)
+  status      GoalStatus @default(NOT_STARTED)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  employee    Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
+
+model PerformanceReview {
+  id         String       @id @default(cuid())
+  tenantId   String
+  employeeId String
+  reviewerId String
+  period     String
+  rating     Int?
+  feedback   String?      @db.Text
+  status     ReviewStatus @default(DRAFT)
+  reviewDate DateTime?    @db.Date
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  employee   Employee     @relation("ReviewSubject", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer   Employee     @relation("ReviewConducted", fields: [reviewerId], references: [id])
+
+  @@map("performance_reviews")
+}
+
+// ─── Learning ─────────────────────────────────────────────────────────────────
+
+model Course {
+  id          String       @id @default(cuid())
+  tenantId    String
+  title       String
+  description String?      @db.Text
+  category    String?
+  durationHrs Float?
+  contentUrl  String?
+  status      CourseStatus @default(DRAFT)
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enrollments CourseEnrollment[]
+
+  @@map("courses")
+}
+
+model CourseEnrollment {
+  id          String    @id @default(cuid())
+  tenantId    String
+  courseId    String
+  employeeId  String
+  progress    Int       @default(0)
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, employeeId])
+  @@map("course_enrollments")
 }

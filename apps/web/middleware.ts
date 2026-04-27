@@ -9,43 +9,47 @@ export default auth(async (req: NextRequest & { auth: any }) => {
 
   // ── Super admin section ──────────────────────────────────────────────────
   if (pathname.startsWith('/superadmin')) {
-    // Login page: allow unauthenticated; redirect already-logged-in admins
     if (pathname === '/superadmin') {
       if (user?.isSuperAdmin) {
         return NextResponse.redirect(new URL('/superadmin/dashboard', req.url))
       }
       return NextResponse.next()
     }
-    // All other /superadmin/* require a super admin session
     if (!user?.isSuperAdmin) {
       return NextResponse.redirect(new URL('/superadmin', req.url))
     }
     return NextResponse.next()
   }
 
-  // ── Public tenant paths ───────────────────────────────────────────────────
+  // ── Always-public paths ───────────────────────────────────────────────────
   if (
+    pathname === '/' ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/billing/webhook') ||
-    pathname === '/login' ||
-    pathname === '/signup'
+    pathname === '/onboarding'
   ) {
     return NextResponse.next()
   }
 
-  // ── Require session for all other routes ──────────────────────────────────
+  // ── Auth pages: redirect signed-in tenants to their dashboard ─────────────
+  if (pathname === '/login' || pathname === '/signup') {
+    if (user && !user.isSuperAdmin && user.tenantSlug) {
+      return NextResponse.redirect(new URL(`/${user.tenantSlug}/`, req.url))
+    }
+    return NextResponse.next()
+  }
+
+  // ── Tenant dashboard routes /<slug>/... ───────────────────────────────────
   if (!user) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // Super admin accidentally on tenant routes → back to their panel
   if (user.isSuperAdmin) {
     return NextResponse.redirect(new URL('/superadmin/dashboard', req.url))
   }
 
-  // Tenant must exist for all dashboard routes
   if (!user.tenantId) {
     return NextResponse.redirect(new URL('/onboarding', req.url))
   }

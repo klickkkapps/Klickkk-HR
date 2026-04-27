@@ -1,6 +1,11 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+
+function useSlug() {
+  const pathname = usePathname()
+  return pathname.split('/')[1] ?? ''
+}
 import Link from 'next/link'
 import { useState, useCallback } from 'react'
 import { Search, ChevronLeft, ChevronRight, Eye, MoreHorizontal } from 'lucide-react'
@@ -37,6 +42,7 @@ export function EmployeeTable({
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
+  const slug = useSlug()
   const totalPages = Math.ceil(total / pageSize)
 
   const updateParams = useCallback(
@@ -138,7 +144,7 @@ export function EmployeeTable({
                   </td>
                   <td className="px-4 py-3">
                     <Link
-                      href={`/employees/${emp.id}`}
+                      href={`/${slug}/employees/${emp.id}`}
                       className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 inline-flex"
                     >
                       <Eye size={15} />

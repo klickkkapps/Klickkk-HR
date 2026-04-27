@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
@@ -20,7 +20,7 @@ type FormData = z.infer<typeof schema>
 function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const callbackUrl = params.get('callbackUrl') ?? '/'
+  const callbackUrl = params.get('callbackUrl')
   const [showPassword, setShowPassword] = useState(false)
   const [noAccount, setNoAccount] = useState(false)
   const [noAccountEmail, setNoAccountEmail] = useState('')
@@ -50,7 +50,22 @@ function LoginForm() {
       return
     }
 
-    router.push(callbackUrl)
+    // If there's a specific callbackUrl (e.g. from middleware redirect), use it
+    if (callbackUrl && callbackUrl !== '/') {
+      router.push(callbackUrl)
+      router.refresh()
+      return
+    }
+
+    // Otherwise, get the fresh session to find the tenant slug
+    const session = await getSession()
+    const tenantSlug = (session?.user as any)?.tenantSlug
+
+    if (tenantSlug) {
+      router.push(`/${tenantSlug}/`)
+    } else {
+      router.push('/onboarding')
+    }
     router.refresh()
   }
 
@@ -89,9 +104,6 @@ function LoginForm() {
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="block text-sm font-medium text-slate-700">Password</label>
-            <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline">
-              Forgot password?
-            </Link>
           </div>
           <div className="relative">
             <input

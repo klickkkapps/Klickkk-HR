@@ -6,7 +6,9 @@ export default async function OnboardingPage() {
   const session = await auth()
 
   // Already has a tenant → go to dashboard
-  if (session?.user.tenantId) redirect('/')
+  if (session?.user.tenantId && (session.user as any).tenantSlug) {
+    redirect(`/${(session.user as any).tenantSlug}/`)
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
