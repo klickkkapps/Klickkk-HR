@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Users, Clock, CalendarDays, DollarSign, TrendingUp,
   BookOpen, Receipt, FileText, BarChart3, Settings, GitBranch,
-  ChevronDown, ChevronRight, Briefcase, CreditCard,
+  ChevronDown, ChevronRight, Briefcase, CreditCard, Megaphone,
+  Package, LogOut,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -30,8 +31,11 @@ function buildNavItems(slug: string): NavItem[] {
     { label: 'Performance', path: p('/performance'), icon: TrendingUp },
     { label: 'Learning',    path: p('/learning'),    icon: BookOpen },
     { label: 'Expenses',    path: p('/expenses'),    icon: Receipt },
-    { label: 'Documents',   path: p('/documents'),   icon: FileText },
-    { label: 'Reports',     path: p('/reports'),     icon: BarChart3 },
+    { label: 'Documents',      path: p('/documents'),      icon: FileText },
+    { label: 'Reports',        path: p('/reports'),        icon: BarChart3 },
+    { label: 'Announcements',  path: p('/announcements'),  icon: Megaphone },
+    { label: 'Assets',         path: p('/assets'),         icon: Package },
+    { label: 'Exit Management',path: p('/exit'),           icon: LogOut },
     {
       label: 'Settings',
       icon: Settings,

@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { toast } from 'sonner'
-import { Banknote, Play, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { Banknote, Play, ChevronDown, ChevronUp, AlertCircle, FileText } from 'lucide-react'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -69,6 +70,8 @@ interface Props {
 
 export default function PayrollClient({ data }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
+  const slug = pathname.split('/')[1] ?? ''
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -260,7 +263,7 @@ export default function PayrollClient({ data }: Props) {
                         <th className="text-right px-4 py-3 font-medium text-slate-500">Deductions</th>
                         <th className="text-right px-4 py-3 font-medium text-slate-500">Net Pay</th>
                         <th className="text-right px-4 py-3 font-medium text-slate-500">Days</th>
-                        <th className="px-4 py-3 w-8" />
+                        <th className="px-4 py-3 w-16" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -279,12 +282,23 @@ export default function PayrollClient({ data }: Props) {
                               {e.lopDays > 0 && <span className="text-red-500 ml-1">(LOP: {e.lopDays})</span>}
                             </td>
                             <td className="px-4 py-3">
-                              <button
-                                onClick={() => setExpandedEntry(expandedEntry === e.id ? null : e.id)}
-                                className="text-slate-400 hover:text-slate-600"
-                              >
-                                {expandedEntry === e.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                              </button>
+                              <div className="flex items-center gap-1 justify-end">
+                                {selectedRun.status === 'COMPLETED' && (
+                                  <Link
+                                    href={`/${slug}/payroll/${selectedRun.id}/payslip/${e.id}`}
+                                    className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    title="View Payslip"
+                                  >
+                                    <FileText size={14} />
+                                  </Link>
+                                )}
+                                <button
+                                  onClick={() => setExpandedEntry(expandedEntry === e.id ? null : e.id)}
+                                  className="p-1 rounded text-slate-400 hover:text-slate-600"
+                                >
+                                  {expandedEntry === e.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                           {expandedEntry === e.id && (

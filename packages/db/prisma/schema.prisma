@@ -109,6 +109,21 @@ enum CourseStatus {
   ARCHIVED
 }
 
+enum AssetStatus {
+  AVAILABLE
+  ASSIGNED
+  UNDER_REPAIR
+  RETIRED
+}
+
+enum ExitStatus {
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
 // ─── Tenant (Company) ─────────────────────────────────────────────────────────
 
 model Tenant {
@@ -149,6 +164,8 @@ model Tenant {
   roles             Role[]
   permissions       TenantPermission[]
   announcements     Announcement[]
+  assets            Asset[]
+  exitRequests      ExitRequest[]
   leaveTypes        LeaveType[]
   holidays          Holiday[]
   payrollRuns       PayrollRun[]
@@ -429,6 +446,8 @@ model Employee {
   performanceReviews    PerformanceReview[] @relation("ReviewSubject")
   conductedReviews      PerformanceReview[] @relation("ReviewConducted")
   courseEnrollments     CourseEnrollment[]
+  assetAssignments      AssetAssignment[]
+  exitRequest           ExitRequest?
 
   @@unique([tenantId, email])
   @@unique([tenantId, employeeCode])
@@ -896,4 +915,78 @@ model CourseEnrollment {
 
   @@unique([courseId, employeeId])
   @@map("course_enrollments")
+}
+
+// ─── Assets ───────────────────────────────────────────────────────────────────
+
+model Asset {
+  id            String      @id @default(cuid())
+  tenantId      String
+  name          String
+  category      String
+  serialNumber  String?
+  brand         String?
+  model         String?
+  status        AssetStatus @default(AVAILABLE)
+  purchaseDate  DateTime?   @db.Date
+  purchasePrice Int?
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignments   AssetAssignment[]
+
+  @@map("assets")
+}
+
+model AssetAssignment {
+  id          String    @id @default(cuid())
+  tenantId    String
+  assetId     String
+  employeeId  String
+  assignedAt  DateTime  @default(now())
+  returnedAt  DateTime?
+  notes       String?
+
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("asset_assignments")
+}
+
+// ─── Exit Management ──────────────────────────────────────────────────────────
+
+model ExitRequest {
+  id               String     @id @default(cuid())
+  tenantId         String
+  employeeId       String     @unique
+  resignationDate  DateTime   @db.Date
+  lastWorkingDay   DateTime   @db.Date
+  reason           String?    @db.Text
+  status           ExitStatus @default(PENDING)
+  hrNotes          String?    @db.Text
+  processedBy      String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  tenant           Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee         Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  clearanceItems   ExitClearanceItem[]
+
+  @@map("exit_requests")
+}
+
+model ExitClearanceItem {
+  id            String    @id @default(cuid())
+  exitRequestId String
+  department    String
+  cleared       Boolean   @default(false)
+  clearedBy     String?
+  clearedAt     DateTime?
+  remarks       String?
+
+  exitRequest   ExitRequest @relation(fields: [exitRequestId], references: [id], onDelete: Cascade)
+
+  @@map("exit_clearance_items")
 }
